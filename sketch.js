@@ -1,29 +1,90 @@
-var canvas, backgroundImage;
+//Create variables here
+var dog,sadDog,happyDog;
+var foodObj;
+var foodS,foodStock;
+var fedTime,lastFed,feed,addFood;
+function preload()
+{
+	sadDog=loadImage("images/dog.png")
+  happyDog=loadImage("images/happy dog.png")
+}
 
-var gameState = 0;
-var playerCount;
-var allPlayers;
-var distance = 0;
-var database;
+function setup() {
+  database=firebase.database()
+  createCanvas(1000, 700);
 
-var form, player, game;
-var cars,car1,car2,car3,car4;
+  foodObj = new Food();
 
-function setup(){
-  canvas = createCanvas(displayWidth-20,displayHeight-30);
-  database = firebase.database();
-  game = new Game();
-  game.getState();
-  game.start();
+  foodStock = database.ref('Food');
+  foodStock.on("value" , readStock);
+ 
+  dog=createSprite(800,200,150,150);
+  dog.addImage(sadDog);
+  dog.scale=0.15;
+
+  feed = createButton("Feed the dog");
+  feed.position(700,95)
+  feed.mousePressed(feedDog);
+
+  addFood = createButton("Add Food");
+  addFood.position(800,95);
+  addFood.mousePressed(addFoods);
+
+
 }
 
 
-function draw(){
-  if(playerCount === 4){
-    game.update(1);
-  }
-  if(gameState === 1){
-    clear();
-    game.play();
-  }
+function draw() {  
+background(46,139,87);
+
+foodObj.display();
+
+fedTime = database.ref('FeedTime');
+fedTime.on("value", function (data){
+  lastFed = data.val();
+})
+fill(225,225,254);
+textSize(15);
+if(lastFed >= 12){
+  text("last Feed: " + lastFed %12 + "PM", 350,30);
+}
+else if(lastFed == 0){
+  text("last Feed: 12AM ", 350,30);
+}
+else{
+  text("last Feed: " + lastFed + "AM", 350,30);
+}
+  
+
+drawSprites();
+  
+
+}
+function readStock(data){
+  foodS = data.val();
+  foodObj.updateFoodStock(foodS);
+
+}
+
+
+
+
+
+function feedDog(){
+  dog.addImage(happyDog);
+
+  foodObj.updateFoodStock(foodObj.getFoodStock()-1);
+  database.ref('/').update({
+    Food: foodObj.getFoodStock(),
+    FeedTime : hour()
+  })
+}
+
+
+
+function addFoods(){
+  foodS++;
+  database.ref('/').update({
+    Food: foodS
+  })
 }
